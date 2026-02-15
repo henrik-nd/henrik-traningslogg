@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Träningslogg Elite</title>
+<title>Henrik träningslogg</title>
+
+<link rel="icon" href="gym-icon.png" type="image/png">
 
 <style>
 body {
@@ -41,6 +43,7 @@ h1 {
 .row {
   display: flex;
   gap: 6px;
+  margin-bottom: 8px;
 }
 
 input {
@@ -93,13 +96,12 @@ button {
 .stat {
   font-size: 14px;
 }
-
 </style>
 </head>
 <body>
 
-<h1>Träningslogg Henrik</h1>
-<div class="subtitle">Progression • Statistik • Timer • Backup</div>
+<h1>Henrik träningslogg 🏋️</h1>
+<div class="subtitle">Progression • Statistik • Timer • Backup • Egna övningar</div>
 
 <div class="card">
 <div class="timer" id="timer">00:00</div>
@@ -107,7 +109,6 @@ button {
 </div>
 
 <div class="card" id="stats"></div>
-
 <div id="app"></div>
 
 <div class="card">
@@ -116,8 +117,7 @@ button {
 </div>
 
 <script>
-
-const exercises = [
+let exercises = [
 "Benpress / Squat",
 "Marklyft",
 "Benspark fram",
@@ -132,16 +132,16 @@ let restInterval;
 let restTime = 0;
 
 function formatTime(sec){
-let m = Math.floor(sec/60);
-let s = sec%60;
+let m=Math.floor(sec/60);
+let s=sec%60;
 return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }
 
 function startTimer(){
-restTime = 90;
+restTime=90;
 updateTimer();
 clearInterval(restInterval);
-restInterval = setInterval(()=>{
+restInterval=setInterval(()=>{
 restTime--;
 updateTimer();
 if(restTime<=0) clearInterval(restInterval);
@@ -149,33 +149,19 @@ if(restTime<=0) clearInterval(restInterval);
 }
 
 function updateTimer(){
-
-document.getElementById("timer").innerText = formatTime(restTime);
+document.getElementById("timer").innerText=formatTime(restTime);
 }
 
-function getLog(){
-return JSON.parse(localStorage.getItem("eliteLog")||"{}");
-}
-
-function saveLog(log){
-localStorage.setItem("eliteLog",JSON.stringify(log));
-}
+function getLog(){return JSON.parse(localStorage.getItem("eliteLog")||"{}");}
+function saveLog(log){localStorage.setItem("eliteLog",JSON.stringify(log));}
 
 function addSet(ex){
-let w = document.getElementById(`w-${ex}`).value;
-let r = document.getElementById(`r-${ex}`).value;
-
+let w=document.getElementById(`w-${ex}`).value;
+let r=document.getElementById(`r-${ex}`).value;
 if(!w||!r)return;
-
 let log=getLog();
 if(!log[ex])log[ex]=[];
-
-log[ex].push({
-date:new Date().toLocaleDateString(),
-weight:Number(w),
-reps:Number(r)
-});
-
+log[ex].push({date:new Date().toLocaleDateString(),weight:Number(w),reps:Number(r)});
 saveLog(log);
 render();
 startTimer();
@@ -191,39 +177,18 @@ return `Förslag: ${last.weight+2.5} kg × ${last.reps}`;
 
 function getStats(){
 let log=getLog();
-let volume=0;
-let sets=0;
-let max=0;
-
-Object.values(log).forEach(ex=>{
-ex.forEach(set=>{
-volume+=set.weight*set.reps;
-sets++;
-if(set.weight>max)max=set.weight;
-});
-});
-
-document.getElementById("stats").innerHTML=`
-<div class="stat">Total volym: ${Math.round(volume)} kg</div>
-<div class="stat">Totala sets: ${sets}</div>
-<div class="stat">Max vikt: ${max} kg</div>
-`;
+let volume=0, sets=0, max=0;
+Object.values(log).forEach(ex=>{ex.forEach(set=>{volume+=set.weight*set.reps;sets++;if(set.weight>max)max=set.weight;});});
+document.getElementById("stats").innerHTML=`<div class="stat">Total volym: ${Math.round(volume)} kg</div><div class="stat">Totala sets: ${sets}</div><div class="stat">Max vikt: ${max} kg</div>`;
 }
 
-function exportData(){
-let data=localStorage.getItem("eliteLog");
-let blob=new Blob([data],{type:"application/json"});
-let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="traningslogg-backup.json";
-a.click();
-}
+function exportData(){let data=localStorage.getItem("eliteLog");let blob=new Blob([data],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="traningslogg-backup.json";a.click();}
 
-function clearAll(){
-if(confirm("Radera allt?")){
-localStorage.removeItem("eliteLog");
-render();
-}
+function clearAll(){if(confirm("Radera allt?")){localStorage.removeItem("eliteLog");render();}}
+
+function addExercise(){
+let name=prompt("Namn på ny övning:");
+if(name) {exercises.push(name);render();}
 }
 
 function render(){
@@ -231,37 +196,23 @@ let app=document.getElementById("app");
 let log=getLog();
 app.innerHTML="";
 
+let addBtn=document.createElement("button");
+addBtn.className="success";
+addBtn.innerText="Lägg till egen övning";
+addBtn.onclick=addExercise;
+app.appendChild(addBtn);
+
 exercises.forEach(ex=>{
 let entries=log[ex]||[];
-
 let div=document.createElement("div");
 div.className="card";
-
-div.innerHTML=`
-<div class="exercise-title">${ex}</div>
-
-<div class="row">
-<input id="w-${ex}" type="number" placeholder="kg">
-<input id="r-${ex}" type="number" placeholder="reps">
-</div>
-
-<button class="primary" onclick="addSet('${ex}')">Lägg till set</button>
-
-<div class="suggestion">${getSuggestion(ex)}</div>
-
-<div class="history">
-${entries.slice().reverse().map(e=>`<div class="entry">${e.date}: ${e.weight}kg × ${e.reps}</div>`).join("")}
-</div>
-`;
-
+div.innerHTML=`<div class="exercise-title">${ex}</div><div class="row"><input id="w-${ex}" type="number" placeholder="kg"><input id="r-${ex}" type="number" placeholder="reps"></div><button class="primary" onclick="addSet('${ex}')">Lägg till set</button><div class="suggestion">${getSuggestion(ex)}</div><div class="history">${entries.slice().reverse().map(e=>`<div class="entry">${e.date}: ${e.weight}kg × ${e.reps}</div>`).join("")}</div>`;
 app.appendChild(div);
 });
-
 getStats();
 }
 
 render();
-
 </script>
 
 </body>
