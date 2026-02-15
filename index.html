@@ -4,216 +4,61 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Henrik träningslogg</title>
-
 <link rel="icon" href="gym-icon.png" type="image/png">
-
 <style>
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial;
-  margin: 0;
-  padding: 12px;
-  background: #f2f2f7;
-}
-
-h1 {
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-.subtitle {
-  text-align: center;
-  color: #666;
-  margin-bottom: 12px;
-}
-
-.card {
-  background: white;
-  padding: 14px;
-  border-radius: 14px;
-  margin-bottom: 12px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-}
-
-.exercise-title {
-  font-weight: bold;
-  font-size: 18px;
-  margin-bottom: 8px;
-}
-
-.row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 16px;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-  border-radius: 10px;
-  border: none;
-  font-weight: bold;
-  font-size: 16px;
-}
-
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial; margin: 0; padding: 12px; background: #f2f2f7; }
+h1 { text-align: center; margin-bottom: 4px; }
+.subtitle { text-align: center; color: #666; margin-bottom: 12px; }
+.card { background: white; padding: 14px; border-radius: 14px; margin-bottom: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+.exercise-title { font-weight: bold; font-size: 18px; margin-bottom: 8px; }
+.row { display: flex; gap: 6px; margin-bottom: 8px; }
+input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+button { width: 100%; padding: 12px; margin-top: 6px; border-radius: 10px; border: none; font-weight: bold; font-size: 16px; }
 .primary { background: #007AFF; color: white; }
 .success { background: #34C759; color: white; }
 .warning { background: #FF9500; color: white; }
 .danger { background: #FF3B30; color: white; }
-
-.history {
-  margin-top: 6px;
-  font-size: 14px;
-}
-
-.entry {
-  background: #eef2f7;
-  padding: 6px;
-  border-radius: 6px;
-  margin-top: 4px;
-}
-
-.suggestion {
-  color: #007AFF;
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-.timer {
-  text-align: center;
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.stat {
-  font-size: 14px;
-}
+.history { margin-top: 6px; font-size: 14px; }
+.entry { background: #eef2f7; padding: 6px; border-radius: 6px; margin-top: 4px; }
+.suggestion { color: #007AFF; font-size: 13px; margin-top: 4px; }
+.timer { text-align: center; font-size: 28px; font-weight: bold; }
+.stat { font-size: 14px; }
 </style>
 </head>
 <body>
-
 <h1>Henrik träningslogg 🏋️</h1>
 <div class="subtitle">Progression • Statistik • Timer • Backup • Egna övningar</div>
-
 <div class="card">
 <div class="timer" id="timer">00:00</div>
 <button class="warning" onclick="startTimer()">Starta vila (90s)</button>
 </div>
-
 <div class="card" id="stats"></div>
 <div id="app"></div>
-
 <div class="card">
 <button class="success" onclick="exportData()">Exportera backup</button>
 <button class="danger" onclick="clearAll()">Radera all data</button>
 </div>
-
 <script>
-let exercises = [
-"Benpress / Squat",
-"Marklyft",
-"Benspark fram",
-"Benspark bak",
-"Rygglyft",
-"Höftböjare",
-"Bålrotation",
-"Mage"
-];
-
+let exercises = ["Benpress / Squat","Marklyft","Benspark fram","Benspark bak","Rygglyft","Höftböjare","Bålrotation","Mage"];
 let restInterval;
 let restTime = 0;
-
-function formatTime(sec){
-let m=Math.floor(sec/60);
-let s=sec%60;
-return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-
-function startTimer(){
-restTime=90;
-updateTimer();
-clearInterval(restInterval);
-restInterval=setInterval(()=>{
-restTime--;
-updateTimer();
-if(restTime<=0) clearInterval(restInterval);
-},1000);
-}
-
-function updateTimer(){
-document.getElementById("timer").innerText=formatTime(restTime);
-}
-
-function getLog(){return JSON.parse(localStorage.getItem("eliteLog")||"{}");}
-function saveLog(log){localStorage.setItem("eliteLog",JSON.stringify(log));}
-
-function addSet(ex){
-let w=document.getElementById(`w-${ex}`).value;
-let r=document.getElementById(`r-${ex}`).value;
-if(!w||!r)return;
-let log=getLog();
-if(!log[ex])log[ex]=[];
-log[ex].push({date:new Date().toLocaleDateString(),weight:Number(w),reps:Number(r)});
-saveLog(log);
-render();
-startTimer();
-}
-
-function getSuggestion(ex){
-let log=getLog();
-let e=log[ex];
-if(!e||e.length==0)return "Ingen historik";
-let last=e[e.length-1];
-return `Förslag: ${last.weight+2.5} kg × ${last.reps}`;
-}
-
-function getStats(){
-let log=getLog();
-let volume=0, sets=0, max=0;
-Object.values(log).forEach(ex=>{ex.forEach(set=>{volume+=set.weight*set.reps;sets++;if(set.weight>max)max=set.weight;});});
-document.getElementById("stats").innerHTML=`<div class="stat">Total volym: ${Math.round(volume)} kg</div><div class="stat">Totala sets: ${sets}</div><div class="stat">Max vikt: ${max} kg</div>`;
-}
-
-function exportData(){let data=localStorage.getItem("eliteLog");let blob=new Blob([data],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="traningslogg-backup.json";a.click();}
-
-function clearAll(){if(confirm("Radera allt?")){localStorage.removeItem("eliteLog");render();}}
-
-function addExercise(){
-let name=prompt("Namn på ny övning:");
-if(name) {exercises.push(name);render();}
-}
-
-function render(){
-let app=document.getElementById("app");
-let log=getLog();
-app.innerHTML="";
-
-let addBtn=document.createElement("button");
-addBtn.className="success";
-addBtn.innerText="Lägg till egen övning";
-addBtn.onclick=addExercise;
-app.appendChild(addBtn);
-
-exercises.forEach(ex=>{
-let entries=log[ex]||[];
-let div=document.createElement("div");
-div.className="card";
-div.innerHTML=`<div class="exercise-title">${ex}</div><div class="row"><input id="w-${ex}" type="number" placeholder="kg"><input id="r-${ex}" type="number" placeholder="reps"></div><button class="primary" onclick="addSet('${ex}')">Lägg till set</button><div class="suggestion">${getSuggestion(ex)}</div><div class="history">${entries.slice().reverse().map(e=>`<div class="entry">${e.date}: ${e.weight}kg × ${e.reps}</div>`).join("")}</div>`;
-app.appendChild(div);
-});
-getStats();
-}
-
+function formatTime(sec){ let m=Math.floor(sec/60); let s=sec%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
+function startTimer(){ restTime=90; updateTimer(); clearInterval(restInterval); restInterval=setInterval(()=>{ restTime--; updateTimer(); if(restTime<=0) clearInterval(restInterval); },1000); }
+function updateTimer(){ document.getElementById("timer").innerText=formatTime(restTime); }
+function getLog(){ return JSON.parse(localStorage.getItem("eliteLog")||"{}"); }
+function saveLog(log){ localStorage.setItem("eliteLog",JSON.stringify(log)); }
+function addSet(ex){ let w=document.getElementById(`w-${ex}`).value; let r=document.getElementById(`r-${ex}`).value; if(!w||!r)return; let log=getLog(); if(!log[ex])log[ex]=[]; log[ex].push({date:new Date().toLocaleDateString(),weight:Number(w),reps:Number(r)}); saveLog(log); render(); startTimer(); }
+function getSuggestion(ex){ let log=getLog(); let e=log[ex]; if(!e||e.length==0)return "Ingen historik"; let last=e[e.length-1]; return `Förslag: ${last.weight+2.5} kg × ${last.reps}`; }
+function getStats(){ let log=getLog(); let volume=0, sets=0, max=0; Object.values(log).forEach(ex=>{ ex.forEach(set=>{ volume+=set.weight*set.reps; sets++; if(set.weight>max) max=set.weight; }); }); document.getElementById("stats").innerHTML=`<div class="stat">Total volym: ${Math.round(volume)} kg</div><div class="stat">Totala sets: ${sets}</div><div class="stat">Max vikt: ${max} kg</div>`; }
+function exportData(){ let data=localStorage.getItem("eliteLog"); let blob=new Blob([data],{type:"application/json"}); let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="traningslogg-backup.json"; a.click(); }
+function clearAll(){ if(confirm("Radera allt?")){ localStorage.removeItem("eliteLog"); exercises = ["Benpress / Squat","Marklyft","Benspark fram","Benspark bak","Rygglyft","Höftböjare","Bålrotation","Mage"]; render(); } }
+function addExercise(){ let name=prompt("Namn på ny övning:"); if(name) { exercises.push(name); render(); } }
+function removeExercise(ex){ if(confirm(`Ta bort övningen: ${ex}?`)){ let log=getLog(); delete log[ex]; saveLog(log); exercises = exercises.filter(e=>e!==ex); render(); } }
+function render(){ let app=document.getElementById("app"); let log=getLog(); app.innerHTML="";
+let addBtn=document.createElement("button"); addBtn.className="success"; addBtn.innerText="Lägg till egen övning"; addBtn.onclick=addExercise; app.appendChild(addBtn);
+exercises.forEach(ex=>{ let entries=log[ex]||[]; let div=document.createElement("div"); div.className="card";
+div.innerHTML=`<div class="exercise-title">${ex}</div><div class="row"><input id="w-${ex}" type="number" placeholder="kg"><input id="r-${ex}" type="number" placeholder="reps"></div><button class="primary" onclick="addSet('${ex}')">Lägg till set</button><button class="danger" onclick="removeExercise('${ex}')">Ta bort övning</button><div class="suggestion">${getSuggestion(ex)}</div><div class="history">${entries.slice().reverse().map(e=>`<div class="entry">${e.date}: ${e.weight}kg × ${e.reps}</div>`).join("")}</div>`; app.appendChild(div); }); getStats(); }
 render();
 </script>
-
 </body>
 </html>
